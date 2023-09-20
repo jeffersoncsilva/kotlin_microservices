@@ -8,6 +8,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
+import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -24,6 +25,8 @@ import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
 import org.springframework.test.web.servlet.setup.MockMvcBuilders
 import org.springframework.web.context.WebApplicationContext
+import org.springframework.web.util.UriComponentsBuilder
+import java.net.URI
 import java.util.*
 import kotlin.random.Random
 
@@ -50,51 +53,45 @@ class UserControllerTest {
 
     @Test
     fun `quando listar todos os usuarios, deve retornar uma lista de usuarios`(){
-//        mockMvc.get("/user"){
-//            contentType = org.springframework.http.MediaType.APPLICATION_JSON
-//        }.andExpect {
-//            status { isOk() }
-//            content { contentType(org.springframework.http.MediaType.APPLICATION_JSON) }
-//        }
-        val result = listOf(getUser(), getUser(), getUser())
-        every { userService.getAll() } returns result
-        assertThat(controller.getAll().body).isNotEmpty
+        val users = listOf(getUser(), getUser(), getUser())
+        every { userService.getAll() } returns users
+        val result = controller.getAll()
+        assertThat(result.body).isNotEmpty
+        assertThat(result.body?.size).isEqualTo(3)
     }
-/*
+
     @Test
     fun `quando buscar usuario por id, deve retornar httpresponse de codigo 200 com o usuario encontrado`(){
-//        val user = getUser()
-//        Mockito.`when`(userService.getById(any())).thenReturn(Optional.of(user))
-//        mockMvc.get("/user/1"){
-//            contentType = org.springframework.http.MediaType.APPLICATION_JSON
-//        }.andExpect {
-//            status { isOk() }
-//            content { contentType(org.springframework.http.MediaType.APPLICATION_JSON) }
-//        }
+        val user = getUser()
+        every { userService.getById(any()) } returns Optional.of(user)
+        val result = controller.getById(1)
+        assertThat(result.statusCode.value()).isEqualTo(200)
+        assertThat(result.body).isNotNull
+        assertThat(result.body?.cpf).isEqualTo(user.cpf)
     }
 
     @Test
     fun `quando buscar usuario por id, e nao existir usuario, deve retornar codigo de erro 404 not found`(){
-        mockMvc.get("/user/1"){
-            contentType = org.springframework.http.MediaType.APPLICATION_JSON
-        }.andExpect {
-            status { isNotFound() }
-        }
+        every { userService.getById(any()) } returns Optional.empty()
+        val result = controller.getById(1234)
+        assertThat(result.statusCode.value()).isEqualTo(404)
+        assertThat(result.body).isNull()
     }
 
     @Test
     fun `quando criar um usuario novo, deve ser retornado um usuario criado com uma url com id do novo usuario`(){
-//        val user = getUser()
-//        Mockito.`when`(userService.save(any())).thenReturn(user)
-//        mockMvc.post("/user"){
-//            contentType = org.springframework.http.MediaType.APPLICATION_JSON
-//            content = objectMapper.writeValueAsString(user.toDto())
-//        }.andExpect {
-//            status { isCreated() }
-//            header { exists("Location") }
-//        }
+        val newUser = getUser()
+        val uriBuilder = mockk<UriComponentsBuilder>()
+        every { uriBuilder.path(any()) } returns uriBuilder
+        every { uriBuilder.build().toUri() } returns URI("user/${newUser.id}")
+        every { userService.save(any()) } returns newUser
+        val result = controller.createNewUser(newUser.toDto(), uriBuilder)
+        assertThat(result.statusCode.value()).isEqualTo(201)
+        assertThat(result.body).isNotNull
+        assertThat(result.body?.cpf).isEqualTo(newUser.cpf)
+        assertThat(result.headers["Location"]).isEqualTo(listOf("user/${newUser.id}"))
     }
-*/
+
 
 
 }
