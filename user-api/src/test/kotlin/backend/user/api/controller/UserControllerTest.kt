@@ -9,6 +9,7 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
 import io.mockk.mockk
+import org.apache.coyote.Response
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -24,6 +25,10 @@ import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
 import org.springframework.test.web.servlet.setup.MockMvcBuilders
+import org.springframework.web.bind.annotation.DeleteMapping
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.context.WebApplicationContext
 import org.springframework.web.util.UriComponentsBuilder
 import java.net.URI
@@ -92,6 +97,29 @@ class UserControllerTest {
         assertThat(result.headers["Location"]).isEqualTo(listOf("user/${newUser.id}"))
     }
 
+    @Test
+    fun `quando buscar um usuario por cpf ou key invalida, deve ser retornado erro de usuario nao encontrado`(){
+        every { userService.findByCpfAndKey(any(), any()) } returns null
+        val result = controller.findByCpf("12345678910", "12345678910")
+        assertThat(result.statusCode.value()).isEqualTo(404)
+        assertThat(result.body).isNull()
+    }
 
+    @Test
+    fun `quando for deletar um usuario, nenhum conteudo e devolvido`(){
+        every { userService.delete(any()) } returns Unit
+        val result = controller.deleta(1)
+        assertThat(result.statusCode.value()).isEqualTo(204)
+        assertThat(result.body).isNull()
+    }
 
+    @Test
+    fun `quando buscar usuario com um nome, deve ser retornado todos com o mesmo nome`(){
+        val users = listOf(getUser(), getUser(), getUser())
+        every { userService.queryByName(any()) } returns users
+        val result = controller.buscarPeloNome("Teste")
+        assertThat(result.statusCode.value()).isEqualTo(200)
+        assertThat(result.body).isNotNull
+        assertThat(result.body?.size).isEqualTo(3)
+    }
 }
